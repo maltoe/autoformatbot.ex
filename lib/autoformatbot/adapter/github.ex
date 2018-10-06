@@ -98,7 +98,7 @@ defmodule Autoformatbot.Adapter.Github do
   def create_pull!(%{tentacat: t, owner: o, repo: r}, base, branch) do
     body = %{
       "title" => "Autoformat #{base}",
-      "body" => "I autoformatted this for you...",
+      "body" => "Let me autoformat this for you :heart:",
       "base" => base,
       "head" => branch
     }
