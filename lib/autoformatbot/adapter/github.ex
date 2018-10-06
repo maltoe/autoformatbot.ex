@@ -2,7 +2,7 @@ defmodule Autoformatbot.Adapter.Github do
   defstruct [:tentacat, :owner, :repo]
 
   def new([owner: _, repo: _, access_token: access_token] = opts) do
-    {:module, _} = Code.ensure_loaded(:tentacat)
+    {:module, _} = Code.ensure_loaded(Tentacat)
 
     # Need to start HTTPoison manually in mix task.
     # https://stackoverflow.com/a/35714348

@@ -28,7 +28,7 @@ defmodule Autoformatbot.Configuration do
   end
 
   defp get_option(key, default) do
-    get_option_from_application(key, default) |> IO.inspect() |> translate(key)
+    get_option_from_application(key, default) |> translate(key)
   end
 
   defp get_option_from_application(key, default) do
