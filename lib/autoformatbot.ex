@@ -91,8 +91,6 @@ defmodule Autoformatbot do
       }
     end
 
-      def unformatted, do: nil
-
     def branch_exists?(%{tentacat: t, owner: o, repo: r}, name) do
       case Tentacat.Repositories.Branches.find(t, o, r, name) do
         {404, %{"message" => "Not Found"}, _} -> {:error, "repository #{o}/#{r} does not exist on remote"}
@@ -113,8 +111,8 @@ defmodule Autoformatbot do
     end
 
     def remove_branch!(%{tentacat: t, owner: o, repo: r}, name) do
-      case Tentacat.References.remove(t, o, r, ref(name)) do
-        {200, _, _} -> :ok
+      case Tentacat.References.remove(t, o, r, "heads/#{name}") do
+        {204, _, _} -> :ok
         other -> {:error, other}
       end
     end
