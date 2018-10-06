@@ -46,6 +46,13 @@ defmodule Autoformatbot.Adapter.Github do
     end
   end
 
+  def delete_branch!(%{tentacat: t, owner: o, repo: r}, name) do
+    case Tentacat.References.remove(t, o, r, "heads/#{name}") do
+      {204, _, _} -> :ok
+      other -> error(other)
+    end
+  end
+
   def reset_branch!(%{tentacat: t, owner: o, repo: r}, name, sha) do
     body = %{"sha" => sha, "force" => true}
 
@@ -55,7 +62,7 @@ defmodule Autoformatbot.Adapter.Github do
     end
   end
 
-  def update_file!(%{tentacat: t, owner: o, repo: r} = client, path, branch) do
+  def update_file!(%{tentacat: t, owner: o, repo: r} = client, branch, path) do
     with {:ok, sha} <- get_file_sha(client, path, branch) do
       body = %{
         "message" => "autoformat #{path}",
@@ -69,7 +76,7 @@ defmodule Autoformatbot.Adapter.Github do
       }
 
       case Tentacat.Contents.update(t, o, r, path, body) do
-        {200, _, _} -> :ok
+        {200, %{"commit" => %{"sha" => sha}}, _} -> {:ok, sha}
         other -> error(other)
       end
     end
