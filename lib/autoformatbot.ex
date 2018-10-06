@@ -77,10 +77,8 @@ defmodule Autoformatbot do
 
   defp upload_files(%{adapter: {mod, c}, files: files, target_branch: b}) do
     Enum.reduce_while(files, :ok, fn file, _acc ->
-      with {:ok, sha} <- mod.get_file_sha(c, file, b),
-           :ok <- mod.update_file!(c, file, sha, b) do
-        {:cont, :ok}
-      else
+      case mod.update_file!(c, file, b) do
+        :ok -> {:cont, :ok}
         err -> {:halt, err}
       end
     end)

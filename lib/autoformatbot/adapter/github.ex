@@ -1,4 +1,6 @@
 defmodule Autoformatbot.Adapter.Github do
+  @behaviour Autoformatbot.Adapter
+
   defstruct [:tentacat, :owner, :repo]
 
   def new([owner: _, repo: _, access_token: access_token] = opts) do
@@ -25,7 +27,7 @@ defmodule Autoformatbot.Adapter.Github do
         {:ok, true}
 
       other ->
-        {:error, other}
+        error(other)
     end
   end
 
@@ -40,7 +42,7 @@ defmodule Autoformatbot.Adapter.Github do
         :ok
 
       other ->
-        {:error, other}
+        error(other)
     end
   end
 
@@ -49,32 +51,27 @@ defmodule Autoformatbot.Adapter.Github do
 
     case Tentacat.References.update(t, o, r, "heads/#{name}", body) do
       {200, _, _} -> :ok
-      other -> {:error, other}
+      other -> error(other)
     end
   end
 
-  def get_file_sha(%{tentacat: t, owner: o, repo: r}, path, branch) do
-    case Tentacat.Contents.find_in(t, o, r, path, "refs/heads/#{branch}") do
-      {200, %{"sha" => sha}, _} -> {:ok, sha}
-      other -> {:error, other}
-    end
-  end
+  def update_file!(%{tentacat: t, owner: o, repo: r} = client, path, branch) do
+    with {:ok, sha} <- get_file_sha(client, path, branch) do
+      body = %{
+        "message" => "autoformat #{path}",
+        "committer" => %{
+          "name" => "autoformatbot",
+          "email" => "autoformatbot@example.com"
+        },
+        "content" => File.read!(path) |> Base.encode64(),
+        "sha" => sha,
+        "branch" => branch
+      }
 
-  def update_file!(%{tentacat: t, owner: o, repo: r}, path, sha, branch) do
-    body = %{
-      "message" => "autoformat #{path}",
-      "committer" => %{
-        "name" => "autoformatbot",
-        "email" => "autoformatbot@example.com"
-      },
-      "content" => File.read!(path) |> Base.encode64(),
-      "sha" => sha,
-      "branch" => branch
-    }
-
-    case Tentacat.Contents.update(t, o, r, path, body) do
-      {200, _, _} -> :ok
-      other -> {:error, other}
+      case Tentacat.Contents.update(t, o, r, path, body) do
+        {200, _, _} -> :ok
+        other -> error(other)
+      end
     end
   end
 
@@ -88,7 +85,16 @@ defmodule Autoformatbot.Adapter.Github do
 
     case Tentacat.Pulls.create(t, o, r, body) do
       {201, _, _} -> :ok
-      other -> {:error, other}
+      other -> error(other)
+    end
+  end
+
+  defp error(other), do: {:error, "Tentacat error: #{inspect(other)}"}
+
+  defp get_file_sha(%{tentacat: t, owner: o, repo: r}, path, branch) do
+    case Tentacat.Contents.find_in(t, o, r, path, "refs/heads/#{branch}") do
+      {200, %{"sha" => sha}, _} -> {:ok, sha}
+      other -> error(other)
     end
   end
 end

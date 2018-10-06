@@ -51,5 +51,5 @@ defmodule Autoformatbot.Configuration do
     end
   end
 
-  defp translate(val, key), do: val
+  defp translate(val, _key), do: val
 end
