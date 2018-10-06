@@ -56,7 +56,6 @@ defmodule Autoformatbot do
       :current_branch,
       :current_sha,
       :target_branch,
-      :branch_existed,
       :files,
       :gh
     ]
@@ -104,7 +103,7 @@ defmodule Autoformatbot do
     end
 
     def create_branch!(%{tentacat: t, owner: o, repo: r}, name, sha) do
-      body = %{"ref" => ref(name), "sha" => sha}
+      body = %{"ref" => "refs/heads/#{name}", "sha" => sha}
 
       case Tentacat.References.create(t, o, r, body) do
         {422, %{"message" => "Object does not exist"}, _} -> {:error, "current SHA does not exist on remote"}
@@ -113,15 +112,17 @@ defmodule Autoformatbot do
       end
     end
 
-    def remove_branch!(%{tentacat: t, owner: o, repo: r}, name) do
-      case Tentacat.References.remove(t, o, r, "heads/#{name}") do
-        {204, _, _} -> :ok
+    def reset_branch!(%{tentacat: t, owner: o, repo: r}, name, sha) do
+      body = %{"sha" => sha, "force" => true}
+
+      case Tentacat.References.update(t, o, r, "heads/#{name}", body) do
+        {200, _, _} -> :ok
         other -> {:error, other}
       end
     end
 
     def get_file_sha(%{tentacat: t, owner: o, repo: r}, path, branch) do
-      case Tentacat.Contents.find_in(t, o, r, path, ref(branch)) do
+      case Tentacat.Contents.find_in(t, o, r, path, "refs/heads/#{branch}") do
         {200, %{"sha" => sha}, _} -> {:ok, sha}
         other -> {:error, other}
       end
@@ -158,10 +159,6 @@ defmodule Autoformatbot do
         other -> {:error, other}
       end
     end
-
-    defp ref(branch) do
-      "refs/heads/#{branch}"
-    end
   end
 
   def call do
@@ -175,9 +172,7 @@ defmodule Autoformatbot do
       {:files, &format!/1},
       {:target_branch, fn %{config: %{suffix: s}, current_branch: b} -> {:ok, b <> s} end},
       {:gh, &new_github_client/1},
-      {:branch_existed, &check_target_branch_existence/1},
-      &maybe_remove_existing_target_branch/1,
-      &create_target_branch/1,
+      &prepare_target_branch/1,
       &upload_files/1,
       &create_pull/1
     ]
@@ -222,16 +217,16 @@ defmodule Autoformatbot do
     {:ok, gh}
   end
 
-  defp check_target_branch_existence(%{gh: gh, target_branch: b}),
-    do: GithubClient.branch_exists?(gh, b)
-
-  defp maybe_remove_existing_target_branch(%{branch_existed: false}), do: :ok
-
-  defp maybe_remove_existing_target_branch(%{gh: gh, target_branch: b}),
-    do: GithubClient.remove_branch!(gh, b)
-
-  defp create_target_branch(%{gh: gh, current_sha: sha, target_branch: b}),
-    do: GithubClient.create_branch!(gh, b, sha)
+  defp prepare_target_branch(%{gh: gh, current_sha: sha, target_branch: b}) do
+    with {:ok, branch_exists} <- GithubClient.branch_exists?(gh, b)
+    do
+      if branch_exists do
+        GithubClient.reset_branch!(gh, b, sha)
+      else
+        GithubClient.create_branch!(gh, b, sha)
+      end
+    end
+  end
 
   defp upload_files(%{gh: gh, files: files, target_branch: b}) do
     Enum.reduce_while(files, :ok, fn file, _acc ->
