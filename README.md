@@ -1,17 +1,20 @@
 # Autoformatbot
 
-TODO
+This tiny Mix task uses the beauty of `mix format` to to clean up after you in a non-intrusive way.
+
+* Remember when stylistic linter tools used to give you the red light :tomato: on pull requests because a line in the code hit the 81 characters mark?
+* Autoformatbot formats selected branches of your repository and creates a friendly pull request on your favourite hosting platform.
 
 ## Installation
 
-Ideally, you tie this into your automated CI tasks. For example, in the `test` environment and GitHub:
+Ideally you tie this into your automated CI tasks. Example configuration for the `test` environment and a GitHub-hosted repository:
 
 ```elixir
 # mix.exs
 def deps do
   [
-    {:autoformatbot, "~> 0.1.0"},
-    {:tentacat, "~> 1.1"}
+    {:tentacat, "~> 1.1", only: [:test]},
+    {:autoformatbot, "~> 0.1.0", only: [:test]}
   ]
 end
 ```
@@ -20,12 +23,15 @@ end
 # config/test.exs
 config :autoformatbot,
   branch: ["master"],        # enable only for branches, set to :all for all
-  suffix: "-autoformatbot",  # Suffix to apply to branches for autoformatted commits
-  adapter: {:github,
+  suffix: "-autoformatbot",  # suffix to apply to branches for autoformatted commits
+  adapter: {:github,         # currently only GitHub
     owner: "maltoe",
-    repo: "autoformatbot.ex"
+    repo: "autoformatbot.ex",
+    access_token: {:system, "GITHUB_TOKEN"}   # retrieves token from environment variable
   }
 ```
+
+Then configure `mix autoformatbot` to be run after each push to `master` and set the `GITHUB_TOKEN` environment variable.
 
 # License
 
