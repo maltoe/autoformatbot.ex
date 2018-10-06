@@ -7,9 +7,9 @@ defmodule Autoformatbot do
     @options [
       {:branch, ["master"]},
       {:suffix, "-autoformatbot"},
-      :github_token,
       :github_owner,
-      :github_repo
+      :github_repo,
+      :github_token
     ]
 
     def get(_token) do
@@ -50,14 +50,20 @@ defmodule Autoformatbot do
   end
 
   defmodule Token do
-    defstruct [:error, :config, :current_branch, :current_sha, :target_branch, :branch_existed, :files, :gh]
+    defstruct [
+      :error,
+      :config,
+      :current_branch,
+      :current_sha,
+      :target_branch,
+      :branch_existed,
+      :files,
+      :gh
+    ]
 
     def pipeline(functions) do
       Enum.reduce_while(functions, %__MODULE__{}, &step/2)
     end
-
-    # TODO: remove me
-    defp debug_step(x, t), do: step(x, IO.inspect(t))
 
     defp step({key, function}, token) do
       case function.(token) do
@@ -109,23 +115,23 @@ defmodule Autoformatbot do
       end
     end
 
-		def get_file_sha(%{tentacat: t, owner: o, repo: r}, path, branch) do
+    def get_file_sha(%{tentacat: t, owner: o, repo: r}, path, branch) do
       case Tentacat.Contents.find_in(t, o, r, path, ref(branch)) do
         {200, %{"sha" => sha}, _} -> {:ok, sha}
         other -> {:error, other}
       end
     end
 
-		def update_file!(%{tentacat: t, owner: o, repo: r}, path, sha, branch) do
+    def update_file!(%{tentacat: t, owner: o, repo: r}, path, sha, branch) do
       body = %{
         "message" => "autoformatted #{path}",
         "committer" => %{
-          "name"  => "autoformatbot",
+          "name" => "autoformatbot",
           "email" => "autoformatbot@example.com"
         },
         "content" => File.read!(path) |> Base.encode64(),
-        "sha"     => sha,
-        "branch"  => branch
+        "sha" => sha,
+        "branch" => branch
       }
 
       case Tentacat.Contents.update(t, o, r, path, body) do
@@ -140,7 +146,6 @@ defmodule Autoformatbot do
   end
 
   def call do
-    x =
     [
       {:config, &Configuration.get/1},
       {:current_branch, fn _token -> cmd!("git", ["rev-parse", "--abbrev-ref", "HEAD"]) end},
@@ -158,7 +163,7 @@ defmodule Autoformatbot do
     ]
     |> Token.pipeline()
 
-    GithubClient.get_file_sha(x.gh, "Makefile", "master") |> IO.inspect
+    # GithubClient.get_file_sha(x.gh, "Makefile", "master") |> IO.inspect
   end
 
   defp prevent_infinite_loop(%{config: config, current_branch: b}) do
@@ -189,8 +194,7 @@ defmodule Autoformatbot do
 
   defp format!(_token) do
     with {:ok, _} <- cmd("mix", ["format"]),
-         {:ok, output} <- cmd!("git", ["diff", "--name-only"])
-    do
+         {:ok, output} <- cmd!("git", ["diff", "--name-only"]) do
       {:ok, String.split(output, "\n")}
     end
   end
@@ -204,17 +208,17 @@ defmodule Autoformatbot do
     do: GithubClient.branch_exists?(gh, b)
 
   defp maybe_remove_existing_target_branch(%{branch_existed: false}), do: :ok
+
   defp maybe_remove_existing_target_branch(%{gh: gh, target_branch: b}),
     do: GithubClient.remove_branch!(gh, b)
 
-  defp create_target_branch(%{gh: gh, target_branch: b}),
-    do: GithubClient.create_branch!(gh, b)
+  defp create_target_branch(%{gh: gh, current_sha: sha, target_branch: b}),
+    do: GithubClient.create_branch!(gh, b, sha)
 
-  defp upload_files(%{files: files} = token) do
+  defp upload_files(%{gh: gh, files: files, target_branch: b}) do
     Enum.reduce_while(files, :ok, fn file, _acc ->
-      with {:ok, sha} -> GithubClient.get_file_sha(gh, file, b)
-           :ok -> GithubClient.update_file!(gh, file, sha, b)
-      do
+      with {:ok, sha} <- GithubClient.get_file_sha(gh, file, b),
+           :ok <- GithubClient.update_file!(gh, file, sha, b) do
         {:cont, :ok}
       else
         err -> {:halt, err}
