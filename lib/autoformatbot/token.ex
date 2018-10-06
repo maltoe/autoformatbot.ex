@@ -1,12 +1,13 @@
 defmodule Autoformatbot.Token do
   defstruct [
-    :error,
     :config,
     :current_branch,
     :current_sha,
     :target_branch,
+    :target_sha,
+    :temporary_branch,
     :files,
-    :gh
+    :adapter
   ]
 
   def pipeline(functions) do
