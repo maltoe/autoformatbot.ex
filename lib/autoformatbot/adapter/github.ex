@@ -82,6 +82,19 @@ defmodule Autoformatbot.Adapter.Github do
     end
   end
 
+  def pull_exists?(%{tentacat: t, owner: o, repo: r}, base, branch) do
+    filters = %{
+      "body" => base,
+      "head" => branch
+    }
+
+    case Tentacat.Pulls.filter(t, o, r, filters) do
+      {200, [], _} -> {:ok, false}
+      {200, _, _} -> {:ok, true}
+      other -> error(other)
+    end
+  end
+
   def create_pull!(%{tentacat: t, owner: o, repo: r}, base, branch) do
     body = %{
       "title" => "Autoformat #{base}",

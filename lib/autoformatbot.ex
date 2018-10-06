@@ -100,6 +100,11 @@ defmodule Autoformatbot do
   defp delete_temporary_branch(%{adapter: {mod, c}, temporary_branch: b}),
     do: mod.delete_branch!(c, b)
 
-  defp create_pull(%{adapter: {mod, c}, current_branch: base, target_branch: head}),
-    do: mod.create_pull!(c, base, head)
+  defp create_pull(%{adapter: {mod, c}, current_branch: base, target_branch: head}) do
+    case mod.pull_exists?(c, base, head) do
+      {:ok, true} -> :ok
+      {:ok, false} -> mod.create_pull!(c, base, head)
+      err -> err
+    end
+  end
 end
