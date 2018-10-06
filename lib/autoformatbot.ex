@@ -145,6 +145,20 @@ defmodule Autoformatbot do
       end
     end
 
+    def create_pull!(%{tentacat: t, owner: o, repo: r}, base, branch) do
+      body = %{
+        "title" => "Autoformat",
+        "body" => "I autoformatted this for you...",
+        "base" => base,
+        "head" => branch
+      }
+
+      case Tentacat.Pulls.create(t, o, r, body) do
+        {201, _, _} -> :ok
+        other -> {:error, other}
+      end
+    end
+
     defp ref(branch) do
       "refs/heads/#{branch}"
     end
@@ -164,7 +178,8 @@ defmodule Autoformatbot do
       {:branch_existed, &check_target_branch_existence/1},
       &maybe_remove_existing_target_branch/1,
       &create_target_branch/1,
-      &upload_files/1
+      &upload_files/1,
+      &create_pull/1
     ]
     |> Token.pipeline()
   end
@@ -228,6 +243,9 @@ defmodule Autoformatbot do
       end
     end)
   end
+
+  defp create_pull(%{gh: gh, current_branch: base, target_branch: head}),
+    do: GithubClient.create_pull!(gh, base, head)
 
   # Executes system command, returns {:ok, {output, exit_status}} or {:error, msg} on error.
   defp cmd(exec, args) do
