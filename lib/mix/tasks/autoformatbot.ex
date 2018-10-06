@@ -3,10 +3,6 @@ defmodule Mix.Tasks.Autoformatbot do
 
   @shortdoc "Run the autoformatbot"
   def run(_) do
-    # Need to start HTTPoison manually in mix task.
-    # https://stackoverflow.com/a/35714348
-    {:ok, _} = Application.ensure_all_started(:httpoison)
-
     case Autoformatbot.call() do
       :ok ->
         exit(:normal)

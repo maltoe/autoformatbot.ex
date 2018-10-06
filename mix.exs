@@ -12,14 +12,12 @@ defmodule Autoformatbot.MixProject do
   end
 
   def application do
-    [
-      extra_applications: [:httpoison]
-    ]
+    []
   end
 
   defp deps do
     [
-      {:tentacat, "~> 1.1"}
+      {:tentacat, "~> 1.1", optional: true}
     ]
   end
 end
