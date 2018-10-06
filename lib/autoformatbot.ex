@@ -78,7 +78,7 @@ defmodule Autoformatbot do
     mod.create_branch!(c, b, sha)
   end
 
-  defp update_files(%{adapter: {mod, c}, files: files, target_branch: b}) do
+  defp update_files(%{adapter: {mod, c}, files: files, temporary_branch: b}) do
     Enum.reduce_while(files, :ok, fn path, _acc ->
       case mod.update_file!(c, b, path) do
         {:ok, sha} -> {:cont, {:ok, sha}}
