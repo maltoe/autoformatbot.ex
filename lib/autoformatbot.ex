@@ -62,7 +62,10 @@ defmodule Autoformatbot do
     ]
 
     def pipeline(functions) do
-      Enum.reduce_while(functions, %__MODULE__{}, &step/2)
+      case Enum.reduce_while(functions, %__MODULE__{}, &step/2) do
+        %__MODULE__{} -> :ok
+        err -> err
+      end
     end
 
     defp step({key, function}, token) do
@@ -164,8 +167,6 @@ defmodule Autoformatbot do
       &upload_files/1
     ]
     |> Token.pipeline()
-
-    # GithubClient.get_file_sha(x.gh, "Makefile", "master") |> IO.inspect
   end
 
   defp prevent_infinite_loop(%{config: config, current_branch: b}) do
