@@ -130,7 +130,7 @@ defmodule Autoformatbot do
 
     def update_file!(%{tentacat: t, owner: o, repo: r}, path, sha, branch) do
       body = %{
-        "message" => "autoformatted #{path}",
+        "message" => "autoformat #{path}",
         "committer" => %{
           "name" => "autoformatbot",
           "email" => "autoformatbot@example.com"
