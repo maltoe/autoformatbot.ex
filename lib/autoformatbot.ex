@@ -96,10 +96,17 @@ defmodule Autoformatbot do
 
     def branch_exists?(%{tentacat: t, owner: o, repo: r}, name) do
       case Tentacat.Repositories.Branches.find(t, o, r, name) do
-        {404, %{"message" => "Not Found"}, _} -> {:error, "repository #{o}/#{r} does not exist on remote"}
-        {404, %{"message" => "Branch not found"}, _} -> {:ok, false}
-        {200, _, _} -> {:ok, true}
-        other -> {:error, other}
+        {404, %{"message" => "Not Found"}, _} ->
+          {:error, "repository #{o}/#{r} does not exist on remote"}
+
+        {404, %{"message" => "Branch not found"}, _} ->
+          {:ok, false}
+
+        {200, _, _} ->
+          {:ok, true}
+
+        other ->
+          {:error, other}
       end
     end
 
@@ -107,9 +114,14 @@ defmodule Autoformatbot do
       body = %{"ref" => ref(name), "sha" => sha}
 
       case Tentacat.References.create(t, o, r, body) do
-        {422, %{"message" => "Object does not exist"}, _} -> {:error, "current SHA does not exist on remote"}
-        {201, _, _} -> :ok
-        other -> {:error, other}
+        {422, %{"message" => "Object does not exist"}, _} ->
+          {:error, "current SHA does not exist on remote"}
+
+        {201, _, _} ->
+          :ok
+
+        other ->
+          {:error, other}
       end
     end
 
