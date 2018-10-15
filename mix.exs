@@ -5,7 +5,7 @@ defmodule Autoformatbot.MixProject do
     [
       app: :autoformatbot,
       version: "0.1.0",
-      elixir: "~> 1.7",
+      elixir: "~> 1.6",
       start_permanent: false,
       deps: deps()
     ]
