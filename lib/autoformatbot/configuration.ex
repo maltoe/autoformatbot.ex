@@ -84,5 +84,5 @@ defmodule Autoformatbot.Configuration do
     end
   end
 
-  defp translate(val, _key), do: IO.inspect(val)
+  defp translate(val, _key), do: val
 end
