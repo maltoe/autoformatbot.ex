@@ -22,9 +22,7 @@ end
 ```elixir
 # config/test.exs
 config :autoformatbot,
-  branch: ["master"],        # enable only for branches, set to :all for all
-  suffix: "-autoformatbot",  # suffix to apply to branches for autoformatted commits
-  adapter: {:github,         # currently only GitHub
+  adapter: {:github,                          # currently only GitHub
     owner: "maltoe",
     repo: "autoformatbot.ex",
     access_token: {:system, "GITHUB_TOKEN"}   # retrieves token from environment variable
@@ -32,6 +30,10 @@ config :autoformatbot,
 ```
 
 Then configure `mix autoformatbot` to be run after each push to `master` and set the `GITHUB_TOKEN` environment variable.
+
+## Automating with Travis CI
+
+Please see [.travis.yml](.travis.yml) for a working Travis CI configuration. Make sure to specify the branches you want to run the Autoformatbot on.
 
 # License
 
