@@ -9,8 +9,6 @@ defmodule Autoformatbot do
   def call do
     [
       {:config, &Configuration.get/1},
-      {:current_branch, fn _token -> cmd!("git", ["rev-parse", "--abbrev-ref", "HEAD"]) end},
-      {:current_sha, fn _token -> cmd!("git", ["rev-parse", "HEAD"]) end},
       &prevent_infinite_loop/1,
       &autoformat_enabled_for_branch?/1,
       &needs_formatting?/1,
@@ -27,23 +25,23 @@ defmodule Autoformatbot do
     |> Token.pipeline()
   end
 
-  defp prevent_infinite_loop(%{config: config, current_branch: b}) do
-    if String.ends_with?(b, config.suffix) do
+  defp prevent_infinite_loop(%{config: config}) do
+    if String.ends_with?(config.current_branch, config.suffix) do
       {:normal, "Abort due to autoformat infinite loop prevention policy."}
     else
       :ok
     end
   end
 
-  defp autoformat_enabled_for_branch?(%{config: %{branch: x}, current_branch: b}) do
+  defp autoformat_enabled_for_branch?(%{config: config}) do
     enabled =
-      case x do
+      case config.branch do
         :all -> true
-        x when is_binary(x) -> x == b
-        x when is_list(x) -> Enum.member?(x, b)
+        x when is_binary(x) -> x == config.current_branch
+        x when is_list(x) -> Enum.member?(x, config.current_branch)
       end
 
-    if enabled, do: :ok, else: {:stop, "Autoformat disabled for branch #{b}."}
+    if enabled, do: :ok, else: {:stop, "Autoformat disabled for branch #{config.current_branch}."}
   end
 
   defp needs_formatting?(_token) do
@@ -54,11 +52,11 @@ defmodule Autoformatbot do
     end
   end
 
-  defp target_branch(%{config: %{suffix: s}, current_branch: b}),
-    do: {:ok, b <> s}
+  defp target_branch(%{config: config}),
+    do: {:ok, config.current_branch <> config.suffix}
 
-  defp temporary_branch(%{config: %{suffix: s}, current_branch: b}),
-    do: {:ok, b <> s <> (DateTime.utc_now() |> DateTime.to_unix() |> Integer.to_string())}
+  defp temporary_branch(%{config: config}),
+    do: {:ok, config.current_branch <> config.suffix <> timestamp()}
 
   defp format!(_token) do
     with {:ok, _} <- cmd("mix", ["format"]),
@@ -69,13 +67,19 @@ defmodule Autoformatbot do
 
   defp init_adapter(%{config: config}) do
     case config[:adapter] do
-      {:github, opts} -> {:ok, {Adapter.Github, Adapter.Github.new(opts)}}
-      other -> {:error, "unknown adapter option: #{inspect(other)}"}
+      {:github, opts} ->
+        {:ok, {Adapter.Github, Adapter.Github.new(opts)}}
+
+      {mod, opts} when is_atom(mod) ->
+        {:ok, {mod, mod.new(opts)}}
+
+      other ->
+        {:error, "unknown adapter option: #{inspect(other)}"}
     end
   end
 
-  defp prepare_temporary_branch(%{adapter: {mod, c}, current_sha: sha, temporary_branch: b}) do
-    mod.create_branch!(c, b, sha)
+  defp prepare_temporary_branch(%{config: config, adapter: {mod, c}, temporary_branch: b}) do
+    mod.create_branch!(c, b, config.current_sha)
   end
 
   defp update_files(%{adapter: {mod, c}, files: files, temporary_branch: b}) do
@@ -100,10 +104,10 @@ defmodule Autoformatbot do
   defp delete_temporary_branch(%{adapter: {mod, c}, temporary_branch: b}),
     do: mod.delete_branch!(c, b)
 
-  defp create_pull(%{adapter: {mod, c}, current_branch: base, target_branch: head}) do
-    case mod.pull_exists?(c, base, head) do
+  defp create_pull(%{config: config, adapter: {mod, c}, target_branch: head}) do
+    case mod.pull_exists?(c, config.current_branch, head) do
       {:ok, true} -> :ok
-      {:ok, false} -> mod.create_pull!(c, base, head)
+      {:ok, false} -> mod.create_pull!(c, config.current_branch, head)
       err -> err
     end
   end

@@ -4,9 +4,9 @@ defmodule Autoformatbot.Utils do
 
   Returns `{:ok, {output, exit_status}}` or `{:error, msg}` on error.
   """
-  def cmd(exec, args) do
+  def cmd(exec, args, opts \\ []) do
     try do
-      {:ok, System.cmd(exec, args, stderr_to_stdout: true)}
+      {:ok, System.cmd(exec, args, Keyword.put(opts, :stderr_to_stdout, true))}
     rescue
       e in ErlangError -> {:error, "failed to execute #{exec}: #{e.original}"}
     end
@@ -25,5 +25,12 @@ defmodule Autoformatbot.Utils do
       {:ok, {output, _status}} -> {:error, "non-zero exit code of #{exec}: #{output}"}
       err -> err
     end
+  end
+
+  @doc """
+  Returns a numeric-only timestamp of the current time as string.
+  """
+  def timestamp do
+    DateTime.utc_now() |> DateTime.to_unix() |> Integer.to_string()
   end
 end
