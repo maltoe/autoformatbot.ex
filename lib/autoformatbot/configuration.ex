@@ -3,7 +3,7 @@ defmodule Autoformatbot.Configuration do
   require Logger
 
   @options [
-    {:branch, ["master"]},
+    {:branch, :all},
     {:suffix, "-autoformatbot"},
     {:current_branch, {:cmd, "git", ["rev-parse", "--abbrev-ref", "HEAD"]}},
     {:current_sha, {:cmd, "git", ["rev-parse", "HEAD"]}},
