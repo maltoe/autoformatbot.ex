@@ -27,7 +27,7 @@ defmodule Autoformatbot do
 
   defp prevent_infinite_loop(%{config: config}) do
     if String.contains?(config.current_branch, config.suffix) do
-      {:normal, "Abort due to autoformat infinite loop prevention policy."}
+      {:stop, "Abort due to autoformat infinite loop prevention policy."}
     else
       :ok
     end
