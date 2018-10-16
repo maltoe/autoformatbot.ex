@@ -65,7 +65,7 @@ defmodule Autoformatbot.Adapter.Github do
   def update_file!(%{tentacat: t, owner: o, repo: r} = client, branch, path) do
     with {:ok, sha} <- get_file_sha(client, path, branch) do
       body = %{
-        "message" => "autoformat #{path}",
+        "message" => "[ci skip] autoformat #{path}",
         "committer" => %{
           "name" => "autoformatbot",
           "email" => "autoformatbot@example.com"
