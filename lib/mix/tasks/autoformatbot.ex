@@ -1,5 +1,6 @@
 defmodule Mix.Tasks.Autoformatbot do
   use Mix.Task
+  require Logger
 
   @shortdoc "Run the autoformatbot"
   def run(_) do
@@ -8,11 +9,11 @@ defmodule Mix.Tasks.Autoformatbot do
         exit(:normal)
 
       {:stop, msg} ->
-        IO.puts(msg)
+        Logger.info(msg)
         exit(:normal)
 
       {:error, msg} ->
-        IO.puts(:stderr, ["ERROR: ", msg])
+        Logger.error(msg)
         exit({:shutdown, 1})
     end
   end

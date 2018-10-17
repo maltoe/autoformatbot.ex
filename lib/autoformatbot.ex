@@ -3,10 +3,13 @@ defmodule Autoformatbot do
   Documentation for Autoformatbot.
   """
 
+  require Logger
   import Autoformatbot.Utils
   alias Autoformatbot.{Adapter, Configuration, Token}
 
   def call do
+    Logger.info "autoformatbot start"
+
     [
       {:config, &Configuration.get/1},
       &prevent_infinite_loop/1,
@@ -84,6 +87,8 @@ defmodule Autoformatbot do
 
   defp update_files(%{adapter: {mod, c}, files: files, temporary_branch: b}) do
     Enum.reduce_while(files, :ok, fn path, _acc ->
+      Logger.info "updating #{path}"
+
       case mod.update_file!(c, b, path) do
         {:ok, sha} -> {:cont, {:ok, sha}}
         err -> {:halt, err}
@@ -106,9 +111,16 @@ defmodule Autoformatbot do
 
   defp create_pull(%{config: config, adapter: {mod, c}, target_branch: head}) do
     case mod.pull_exists?(c, config.current_branch, head) do
-      {:ok, true} -> :ok
-      {:ok, false} -> mod.create_pull!(c, config.current_branch, head)
-      err -> err
+      {:ok, true} ->
+        Logger.info("Pull request already exists.")
+        :ok
+
+      {:ok, false} ->
+        Logger.info("Creating pull request: #{head} -> #{config.current_branch}")
+        mod.create_pull!(c, config.current_branch, head)
+
+      err ->
+        err
     end
   end
 end
