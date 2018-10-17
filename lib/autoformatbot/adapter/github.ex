@@ -84,8 +84,9 @@ defmodule Autoformatbot.Adapter.Github do
 
   def pull_exists?(%{tentacat: t, owner: o, repo: r}, base, branch) do
     filters = %{
-      "body" => base,
-      "head" => branch
+      body: base,
+      head: "#{owner}:#{branch}",
+      state: "open"
     }
 
     case Tentacat.Pulls.filter(t, o, r, filters) do
