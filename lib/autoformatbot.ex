@@ -8,7 +8,7 @@ defmodule Autoformatbot do
   alias Autoformatbot.{Adapter, Configuration, Token}
 
   def call do
-    Logger.info "autoformatbot start"
+    Logger.info("autoformatbot start")
 
     [
       {:config, &Configuration.get/1},
@@ -87,7 +87,7 @@ defmodule Autoformatbot do
 
   defp update_files(%{adapter: {mod, c}, files: files, temporary_branch: b}) do
     Enum.reduce_while(files, :ok, fn path, _acc ->
-      Logger.info "updating #{path}"
+      Logger.info("updating #{path}")
 
       case mod.update_file!(c, b, path) do
         {:ok, sha} -> {:cont, {:ok, sha}}
